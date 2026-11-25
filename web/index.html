@@ -910,19 +910,44 @@
         el.aiResponse.textContent = "Harap masukkan Gemini API Key terlebih dahulu lalu klik Simpan.";
         return;
       }
-      if (!question) {
-        el.aiResponse.textContent = "Silakan ketik pertanyaan Anda terlebih dahulu.";
-        return;
-      }
 
       const plant = PLANTS[state.tanaman] || PLANTS.monstera;
-      const prompt = `Kamu adalah asisten perawatan tanaman greenhouse. Jawab pertanyaan pengguna secara singkat, jelas, dan praktis dalam Bahasa Indonesia tanpa format markdown (tanpa tanda bintang, pagar, atau backtick).
-Konteks saat ini:
-- Tanaman aktif: ${plant.name} (Ideal: Tanah ${plant.sMin}-${plant.sMax}%, Suhu ${plant.tMin}-${plant.tMax} C, Kelembapan Udara ${plant.hMin}-${plant.hMax}%, Cahaya ${plant.lMin}-${plant.lMax}%)
-- Data sensor: Tanah ${state.tanah}%, Suhu ${state.suhu} C, Kelembapan Udara ${state.kelembapan}%, Cahaya ${state.cahaya}%
+
+      const systemInstruction = `Kamu adalah asisten agronomi ahli untuk Smart Greenhouse IoT.
+Tugasmu adalah menjawab pertanyaan perawatan dan parameter ideal untuk SEMUA jenis tanaman (baik tanaman hias, sayuran, buah, maupun tanaman lain yang TIDAK ada di daftar 25 preset dropdown).
+ATURAN WAJIB:
+1. DILARANG KERAS mengelak atau menjawab "saat ini sistem diatur untuk ${plant.name}" atau menyuruh pengguna memilih tanaman di dropdown. Fokus jawab langsung tentang tanaman yang ditanyakan pengguna!
+2. Jika pengguna tidak menyebut nama tanaman atau melakukan analisis otomatis, bahas tanaman aktif saat ini (${plant.name}).
+3. Jawab dalam Bahasa Indonesia yang jelas tanpa simbol markdown (*, #, atau backtick).
+4. Wajib gunakan format terstruktur berikut persis seperti ini:
+Kebutuhan Ideal [Nama Tanaman]:
+- Kelembapan Tanah: XX% - YY%
+- Suhu Udara: XX°C - YY°C
+- Kelembapan Udara: XX% - YY%
+- Intensitas Cahaya: XX% - YY%
+
+Rekomendasi Pengaturan Mode Slider Mandiri:
+- Batas Pompa (Siram jika Tanah < XX%)
+- Batas Kipas (Nyala jika Suhu >= YY°C)
+- Batas Lampu (Nyala jika Cahaya < ZZ%)
+
+Evaluasi Sensor Saat Ini & Tips Perawatan:
+- Bandingkan pembacaan 4 sensor greenhouse saat ini dengan kebutuhan tanaman tersebut, lalu berikan 1-2 tips perawatan praktis.`;
+
+      const userQuery = question
+        ? `Pertanyaan pengguna: ${question}`
+        : `Analisis otomatis kondisi tanaman aktif saat ini (${plant.name}) berdasarkan pembacaan sensor greenhouse.`;
+
+      const prompt = `${userQuery}
+
+Data Sensor Greenhouse Saat Ini:
+- Kelembapan Tanah: ${state.tanah}%
+- Suhu Udara: ${state.suhu}°C
+- Kelembapan Udara: ${state.kelembapan}%
+- Intensitas Cahaya: ${state.cahaya}%
 - Sistem: ${Number(state.system_running) === 1 ? "BERJALAN" : "BERHENTI"} (Mode: ${state.control_mode})
-- Relay: Pompa ${Number(state.pompa) === 1 ? "ON" : "OFF"}, Kipas ${Number(state.kipas) === 1 ? "ON" : "OFF"}, Lampu ${Number(state.lampu) === 1 ? "ON" : "OFF"}
-Pertanyaan: ${question}`;
+- Status Relay: Pompa ${Number(state.pompa) === 1 ? "ON" : "OFF"}, Kipas ${Number(state.kipas) === 1 ? "ON" : "OFF"}, Lampu ${Number(state.lampu) === 1 ? "ON" : "OFF"}
+- Referensi Tanaman Aktif di Dropdown: ${plant.name} (Tanah ${plant.sMin}-${plant.sMax}%, Suhu ${plant.tMin}-${plant.tMax}°C, Kelembapan Udara ${plant.hMin}-${plant.hMax}%, Cahaya ${plant.lMin}-${plant.lMax}%)`;
 
       el.btnAskAi.disabled = true;
       el.aiResponse.textContent = "🤖 Sedang menganalisis kondisi tanaman...";
@@ -934,7 +959,14 @@ Pertanyaan: ${question}`;
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              contents: [{ parts: [{ text: prompt }] }]
+              system_instruction: {
+                parts: [{ text: systemInstruction }]
+              },
+              contents: [{ parts: [{ text: prompt }] }],
+              generationConfig: {
+                temperature: 0.4,
+                maxOutputTokens: 1024
+              }
             })
           }
         );
