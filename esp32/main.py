@@ -13,11 +13,11 @@ SSID = "SKOMDA SISWA"
 PASSWORD = ""
 
 SUPABASE_URL = "https://jhkeatsnboshufjutpzy.supabase.co/rest/v1/greenhouse?id=eq.1"
-SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impoa2VhdHNuYm9zaHVmanV0cHp5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTU1ODYyNDQsImV4cCI6MjExMTE2MjI0NH0.FlplmWO-Tx9i-_Vub839li2PU0JsSgMBALsT3Hm9XW8"
+SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impoa2VhdHNuYm9zaHVmanV0cHp5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTU1ODYyNDQsImV4cCI6MjExMTE2MjI0NH0.FlplmWO-Tx9i-_Vub839li2PU0JsSgMBALsT3Hm9XW8"
 
 SUPABASE_HEADERS = {
-    "apikey": SUPABASE_ANON_KEY,
-    "Authorization": "Bearer " + SUPABASE_ANON_KEY,
+    "apikey": SUPABASE_KEY,
+    "Authorization": "Bearer " + SUPABASE_KEY,
     "Content-Type": "application/json",
     "Prefer": "return=minimal",
 }
