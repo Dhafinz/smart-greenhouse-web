@@ -400,12 +400,15 @@
       flex: 1;
     }
 
-    .ai-output {
+    .ai-output, #ai-ans {
       background: var(--card-2);
       border: 1px solid var(--border);
       border-radius: 10px;
       padding: 14px;
       min-height: 92px;
+      height: auto;
+      max-height: none;
+      overflow-wrap: break-word;
       font-size: 0.92rem;
       white-space: pre-wrap;
       line-height: 1.55;
@@ -953,23 +956,32 @@ Data Sensor Greenhouse Saat Ini:
       el.aiResponse.textContent = "🤖 Sedang menganalisis kondisi tanaman...";
 
       try {
-        const res = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(apiKey)}`,
-          {
+        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(apiKey)}`;
+        const buildBody = (withThinkingConfig) => ({
+          system_instruction: {
+            parts: [{ text: systemInstruction }]
+          },
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: withThinkingConfig
+            ? { temperature: 0.4, maxOutputTokens: 2048, thinkingConfig: { thinkingBudget: 0 } }
+            : { temperature: 0.4, maxOutputTokens: 2048 }
+        });
+
+        let res = await fetch(endpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(buildBody(true))
+        });
+
+        // Fallback otomatis jika model mengembalikan HTTP 400 karena tidak mendukung thinkingConfig
+        if (res.status === 400) {
+          res = await fetch(endpoint, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              system_instruction: {
-                parts: [{ text: systemInstruction }]
-              },
-              contents: [{ parts: [{ text: prompt }] }],
-              generationConfig: {
-                temperature: 0.4,
-                maxOutputTokens: 1024
-              }
-            })
-          }
-        );
+            body: JSON.stringify(buildBody(false))
+          });
+        }
+
         const data = await res.json();
         if (!res.ok) throw new Error(data.error?.message || `HTTP ${res.status}`);
         const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "Tidak ada jawaban dari AI.";
