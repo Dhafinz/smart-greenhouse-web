@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smart Greenhouse AI</title>
+  <style>
+    :root {
+      --bg: #0b1310;
+      --surface: #121f1a;
+      --surface-2: #182a23;
+      --border: #253d33;
+      --text: #ecfdf5;
+      --muted: #94b3a6;
+      --primary: #10b981;
+      --primary-dim: rgba(16, 185, 129, 0.16);
+      --warn: #f59e0b;
+      --warn-dim: rgba(245, 158, 11, 0.16);
+      --danger: #ef4444;
+      --danger-dim: rgba(239, 68, 68, 0.16);
+      --info: #38bdf8;
+      --info-dim: rgba(56, 189, 248, 0.16);
+      --radius: 16px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif;
+      background: radial-gradient(circle at top right, #122920 0%, var(--bg) 55%);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 20px 16px 40px;
+      line-height: 1.5;
+    }
+
+    .container {
+      max-width: 1120px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* Header */
+    .header {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 22px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .plant-emoji {
+      width: 52px;
+      height: 52px;
+      border-radius: 14px;
+      background: var(--primary-dim);
+      border: 1px solid rgba(16, 185, 129, 0.35);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      flex-shrink: 0;
+    }
+
+    .brand h1 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .cloud-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 0.82rem;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    .status-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--warn);
+      box-shadow: 0 0 8px var(--warn);
+      transition: background 0.3s, box-shadow 0.3s;
+    }
+
+    .status-dot.online {
+      background: var(--primary);
+      box-shadow: 0 0 8px var(--primary);
+    }
+
+    .status-dot.offline {
+      background: var(--danger);
+      box-shadow: 0 0 8px var(--danger);
+    }
+
+    .plant-selector {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 240px;
+    }
+
+    .plant-selector label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    select, input[type="text"], input[type="password"] {
+      background: var(--surface-2);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 0.92rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    select:focus, input:focus {
+      border-color: var(--primary);
+    }
+
+    /* Sensor Grid */
+    .sensor-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+    }
+
+    @media (max-width: 900px) {
+      .sensor-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 520px) {
+      .sensor-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .sensor-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .sensor-label {
+      font-size: 0.85rem;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .badge {
+      font-size: 0.74rem;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 999px;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      white-space: nowrap;
+    }
+
+    .badge-ok { background: var(--primary-dim); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.35); }
+    .badge-warn { background: var(--warn-dim); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.35); }
+    .badge-danger { background: var(--danger-dim); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.35); }
+    .badge-info { background: var(--info-dim); color: #7dd3fc; border: 1px solid rgba(56, 189, 248, 0.35); }
+    .badge-off { background: rgba(148, 179, 166, 0.12); color: var(--muted); border: 1px solid var(--border); }
+
+    .sensor-val {
+      font-size: 2.1rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+    }
+
+    .sensor-ideal {
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+
+    /* Two Column Layout for Control & AI */
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1.15fr 1fr;
+      gap: 20px;
+    }
+
+    @media (max-width: 860px) {
+      .main-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .panel-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+    }
+
+    /* Relays */
+    .relay-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-top: 6px;
+    }
+
+    @media (max-width: 500px) {
+      .relay-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .relay-box {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      text-align: center;
+      transition: border-color 0.25s, background 0.25s;
+    }
+
+    .relay-box.active {
+      border-color: var(--primary);
+      background: rgba(16, 185, 129, 0.1);
+    }
+
+    .relay-icon {
+      font-size: 1.5rem;
+    }
+
+    .relay-name {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--muted);
+    }
+
+    .relay-state {
+      font-size: 0.9rem;
+      font-weight: 800;
+    }
+
+    /* Controls */
+    .control-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 6px;
+    }
+
+    button {
+      cursor: pointer;
+      border: none;
+      border-radius: 10px;
+      padding: 10px 16px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      transition: transform 0.1s, opacity 0.2s, background 0.2s;
+    }
+
+    button:active {
+      transform: scale(0.98);
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn-primary { background: var(--primary); color: #042f2e; }
+    .btn-danger { background: var(--danger); color: #fff; }
+    .btn-mode { background: var(--surface-2); color: var(--text); border: 1px solid var(--border); flex: 1; }
+    .btn-mode:hover { border-color: var(--primary); }
+
+    /* Sliders */
+    .sliders-box {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: 4px;
+    }
+
+    .sliders-box.hidden {
+      display: none;
+    }
+
+    .slider-row {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .slider-head {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--primary);
+      cursor: pointer;
+    }
+
+    .ai-note {
+      font-size: 0.84rem;
+      color: var(--muted);
+      background: var(--surface-2);
+      border: 1px dashed var(--border);
+      border-radius: 10px;
+      padding: 12px;
+      margin-top: 4px;
+    }
+
+    /* Ask AI Panel */
+    .ai-key-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .ai-key-row input {
+      flex: 1;
+      font-size: 0.84rem;
+      padding: 8px 10px;
+    }
+
+    .ai-ask-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    .ai-ask-row input {
+      flex: 1;
+    }
+
+    .ai-response {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+      min-height: 120px;
+      font-size: 0.9rem;
+      color: #d1fae5;
+      white-space: pre-wrap;
+      line-height: 1.55;
+    }
+
+    .muted-placeholder {
+      color: var(--muted);
+      font-style: italic;
+    }
+
+    .last-sync {
+      font-size: 0.76rem;
+      color: var(--muted);
+      text-align: right;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <header class="header">
+      <div class="brand">
+        <div class="plant-emoji" id="plantEmoji">🌿</div>
+        <div>
+          <h1>Smart Greenhouse AI</h1>
+          <div class="cloud-status">
+            <span class="status-dot" id="cloudDot"></span>
+            <span id="cloudText">Menghubungkan ke Supabase...</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="plant-selector">
+        <label for="plantSelect">Tanaman Aktif (25 Profil)</label>
+        <select id="plantSelect"></select>
+      </div>
+    </header>
+
+    <!-- 4 Real-time Sensor Cards -->
+    <section class="sensor-grid">
+      <div class="card">
+        <div class="sensor-top">
+          <span class="sensor-label">💧 Kelembapan Tanah</span>
+          <span class="badge badge-off" id="badgeSoil">--</span>
+        </div>
+        <div class="sensor-val" id="valSoil">--%</div>
+        <div class="sensor-ideal" id="idealSoil">Ideal: --</div>
+      </div>
+
+      <div class="card">
+        <div class="sensor-top">
+          <span class="sensor-label">🌡️ Suhu Udara</span>
+          <span class="badge badge-off" id="badgeTemp">--</span>
+        </div>
+        <div class="sensor-val" id="valTemp">--°C</div>
+        <div class="sensor-ideal" id="idealTemp">Ideal: --</div>
+      </div>
+
+      <div class="card">
+        <div class="sensor-top">
+          <span class="sensor-label">💨 Kelembapan Udara</span>
+          <span class="badge badge-off" id="badgeHum">--</span>
+        </div>
+        <div class="sensor-val" id="valHum">--%</div>
+        <div class="sensor-ideal" id="idealHum">Ideal: --</div>
+      </div>
+
+      <div class="card">
+        <div class="sensor-top">
+          <span class="sensor-label">☀️ Intensitas Cahaya</span>
+          <span class="badge badge-off" id="badgeLight">--</span>
+        </div>
+        <div class="sensor-val" id="valLight">--%</div>
+        <div class="sensor-ideal" id="idealLight">Ideal: --</div>
+      </div>
+    </section>
+
+    <!-- Automation & Ask AI -->
+    <section class="main-grid">
+      <!-- Automation Panel -->
+      <div class="card">
+        <div class="panel-header">
+          <span class="panel-title">⚙️ Panel Kontrol Otomasi</span>
+          <span class="badge badge-off" id="badgeRunning">BERHENTI</span>
+        </div>
+
+        <div class="relay-grid">
+          <div class="relay-box" id="boxPompa">
+            <div class="relay-icon">🚿</div>
+            <div class="relay-name">Pompa Air</div>
+            <div class="relay-state" id="statePompa">OFF</div>
+          </div>
+          <div class="relay-box" id="boxKipas">
+            <div class="relay-icon">🌀</div>
+            <div class="relay-name">Kipas Angin</div>
+            <div class="relay-state" id="stateKipas">OFF</div>
+          </div>
+          <div class="relay-box" id="boxLampu">
+            <div class="relay-icon">💡</div>
+            <div class="relay-name">Lampu Tumbuh</div>
+            <div class="relay-state" id="stateLampu">OFF</div>
+          </div>
+        </div>
+
+        <div class="control-actions">
+          <button class="btn-primary" id="btnStart">▶ START</button>
+          <button class="btn-danger" id="btnStop">■ STOP</button>
+          <button class="btn-mode" id="btnMode">Mode: AI</button>
+        </div>
+
+        <div class="ai-note" id="aiModeNote">
+          🤖 <strong>Mode Edge AI Aktif:</strong> Pompa, kipas, dan lampu dikendalikan otomatis oleh Decision Tree ESP32 sesuai profil tanaman aktif.
+        </div>
+
+        <div class="sliders-box hidden" id="slidersBox">
+          <div class="slider-row">
+            <div class="slider-head">
+              <span>Ambang Batas Tanah (Pompa ON jika &lt;)</span>
+              <span id="lblThSoil">45%</span>
+            </div>
+            <input type="range" id="sliderSoil" min="10" max="90" value="45" />
+          </div>
+          <div class="slider-row">
+            <div class="slider-head">
+              <span>Ambang Batas Suhu (Kipas ON jika &gt;)</span>
+              <span id="lblThTemp">30°C</span>
+            </div>
+            <input type="range" id="sliderTemp" min="15" max="40" value="30" />
+          </div>
+          <div class="slider-row">
+            <div class="slider-head">
+              <span>Ambang Batas Cahaya (Lampu ON jika &lt;)</span>
+              <span id="lblThLight">40%</span>
+            </div>
+            <input type="range" id="sliderLight" min="5" max="95" value="40" />
+          </div>
+        </div>
+
+        <div class="last-sync" id="lastSync">Sinkronisasi terakhir: -</div>
+      </div>
+
+      <!-- Ask AI Panel -->
+      <div class="card">
+        <div class="panel-header">
+          <span class="panel-title">✨ Tanya AI (Asisten Perawatan Tanaman)</span>
+        </div>
+
+        <div class="ai-key-row">
+          <input type="password" id="geminiKeyInput" placeholder="Masukkan Gemini API Key..." />
+          <button class="btn-mode" style="flex:0 0 auto;" id="btnSaveKey">Simpan</button>
+        </div>
+
+        <div class="ai-ask-row">
+          <input type="text" id="aiQuestion" placeholder="Contoh: Kenapa daun mulai menguning?" />
+          <button class="btn-primary" id="btnAskAi">Kirim</button>
+        </div>
+
+        <div class="ai-response" id="aiResponse">
+          <span class="muted-placeholder">Tanyakan apa saja seputar kondisi tanaman aktif, sensor, atau saran perawatan ke Gemini AI.</span>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const SUPABASE_URL = "https://jhkeatsnboshufjutpzy.supabase.co/rest/v1/greenhouse?id=eq.1";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impoa2VhdHNuYm9zaHVmanV0cHp5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTU1ODYyNDQsImV4cCI6MjExMTE2MjI0NH0.FlplmWO-Tx9i-_Vub839li2PU0JsSgMBALsT3Hm9XW8";
+
+    const PLANTS = {
+      monstera:          { name: "Monstera", emoji: "🌿", tMin: 20, tMax: 29, hMin: 60, hMax: 80, sMin: 45, sMax: 70, lMin: 40, lMax: 70 },
+      philodendron:      { name: "Philodendron", emoji: "🌱", tMin: 20, tMax: 29, hMin: 60, hMax: 80, sMin: 45, sMax: 70, lMin: 35, lMax: 65 },
+      aglaonema:         { name: "Aglaonema", emoji: "🪴", tMin: 20, tMax: 29, hMin: 60, hMax: 80, sMin: 45, sMax: 70, lMin: 30, lMax: 60 },
+      calathea:          { name: "Calathea", emoji: "🍃", tMin: 19, tMax: 27, hMin: 65, hMax: 85, sMin: 55, sMax: 80, lMin: 25, lMax: 55 },
+      anthurium:         { name: "Anthurium", emoji: "🌺", tMin: 20, tMax: 28, hMin: 65, hMax: 85, sMin: 50, sMax: 75, lMin: 40, lMax: 65 },
+      alocasia:          { name: "Alocasia", emoji: "🌿", tMin: 20, tMax: 28, hMin: 65, hMax: 85, sMin: 50, sMax: 75, lMin: 40, lMax: 70 },
+      keladi_hias:       { name: "Keladi Hias", emoji: "🪴", tMin: 21, tMax: 30, hMin: 65, hMax: 85, sMin: 50, sMax: 75, lMin: 45, lMax: 75 },
+      sirih_gading:      { name: "Sirih Gading", emoji: "🍃", tMin: 19, tMax: 30, hMin: 50, hMax: 75, sMin: 40, sMax: 65, lMin: 30, lMax: 65 },
+      peace_lily:        { name: "Peace Lily", emoji: "🕊️", tMin: 19, tMax: 28, hMin: 60, hMax: 80, sMin: 50, sMax: 75, lMin: 25, lMax: 55 },
+      fittonia:          { name: "Fittonia", emoji: "🌱", tMin: 19, tMax: 26, hMin: 70, hMax: 90, sMin: 55, sMax: 80, lMin: 25, lMax: 50 },
+      peperomia:         { name: "Peperomia", emoji: "🍀", tMin: 19, tMax: 27, hMin: 50, hMax: 75, sMin: 35, sMax: 60, lMin: 35, lMax: 65 },
+      begonia_rex:       { name: "Begonia Rex", emoji: "🍁", tMin: 18, tMax: 25, hMin: 60, hMax: 80, sMin: 45, sMax: 70, lMin: 35, lMax: 60 },
+      spider_plant:      { name: "Spider Plant", emoji: "🕷️", tMin: 18, tMax: 27, hMin: 45, hMax: 70, sMin: 40, sMax: 65, lMin: 40, lMax: 70 },
+      pakis_boston:      { name: "Pakis Boston", emoji: "🌿", tMin: 18, tMax: 26, hMin: 70, hMax: 90, sMin: 60, sMax: 85, lMin: 30, lMax: 60 },
+      pilea:             { name: "Pilea", emoji: "🪙", tMin: 18, tMax: 26, hMin: 50, hMax: 70, sMin: 40, sMax: 65, lMin: 45, lMax: 75 },
+      maranta:           { name: "Maranta", emoji: "🌿", tMin: 19, tMax: 27, hMin: 65, hMax: 85, sMin: 50, sMax: 75, lMin: 30, lMax: 55 },
+      anggrek_bulan:     { name: "Anggrek Bulan", emoji: "🌸", tMin: 20, tMax: 28, hMin: 60, hMax: 80, sMin: 35, sMax: 60, lMin: 40, lMax: 65 },
+      tillandsia:        { name: "Tillandsia", emoji: "🌾", tMin: 20, tMax: 30, hMin: 55, hMax: 75, sMin: 10, sMax: 35, lMin: 50, lMax: 80 },
+      kamboja_jepang:    { name: "Kamboja Jepang", emoji: "🌺", tMin: 24, tMax: 34, hMin: 40, hMax: 65, sMin: 25, sMax: 50, lMin: 70, lMax: 95 },
+      krisan_mini:       { name: "Krisan Mini", emoji: "🌼", tMin: 18, tMax: 26, hMin: 50, hMax: 70, sMin: 45, sMax: 70, lMin: 60, lMax: 85 },
+      mawar_mini:        { name: "Mawar Mini", emoji: "🌹", tMin: 18, tMax: 27, hMin: 50, hMax: 75, sMin: 50, sMax: 75, lMin: 65, lMax: 90 },
+      lidah_mertua:      { name: "Lidah Mertua", emoji: "🗡️", tMin: 18, tMax: 32, hMin: 35, hMax: 60, sMin: 20, sMax: 45, lMin: 35, lMax: 80 },
+      lidah_buaya:       { name: "Lidah Buaya", emoji: "🪴", tMin: 20, tMax: 32, hMin: 30, hMax: 55, sMin: 20, sMax: 45, lMin: 65, lMax: 95 },
+      kaktus_mini:       { name: "Kaktus Mini", emoji: "🌵", tMin: 22, tMax: 35, hMin: 25, hMax: 50, sMin: 15, sMax: 35, lMin: 70, lMax: 100 },
+      sukulen_echeveria: { name: "Sukulen Echeveria", emoji: "🪷", tMin: 20, tMax: 32, hMin: 30, hMax: 50, sMin: 15, sMax: 35, lMin: 70, lMax: 95 }
+    };
+
+    const el = {
+      cloudDot: document.getElementById("cloudDot"),
+      cloudText: document.getElementById("cloudText"),
+      plantEmoji: document.getElementById("plantEmoji"),
+      plantSelect: document.getElementById("plantSelect"),
+      valSoil: document.getElementById("valSoil"),
+      valTemp: document.getElementById("valTemp"),
+      valHum: document.getElementById("valHum"),
+      valLight: document.getElementById("valLight"),
+      badgeSoil: document.getElementById("badgeSoil"),
+      badgeTemp: document.getElementById("badgeTemp"),
+      badgeHum: document.getElementById("badgeHum"),
+      badgeLight: document.getElementById("badgeLight"),
+      idealSoil: document.getElementById("idealSoil"),
+      idealTemp: document.getElementById("idealTemp"),
+      idealHum: document.getElementById("idealHum"),
+      idealLight: document.getElementById("idealLight"),
+      badgeRunning: document.getElementById("badgeRunning"),
+      boxPompa: document.getElementById("boxPompa"),
+      boxKipas: document.getElementById("boxKipas"),
+      boxLampu: document.getElementById("boxLampu"),
+      statePompa: document.getElementById("statePompa"),
+      stateKipas: document.getElementById("stateKipas"),
+      stateLampu: document.getElementById("stateLampu"),
+      btnStart: document.getElementById("btnStart"),
+      btnStop: document.getElementById("btnStop"),
+      btnMode: document.getElementById("btnMode"),
+      aiModeNote: document.getElementById("aiModeNote"),
+      slidersBox: document.getElementById("slidersBox"),
+      sliderSoil: document.getElementById("sliderSoil"),
+      sliderTemp: document.getElementById("sliderTemp"),
+      sliderLight: document.getElementById("sliderLight"),
+      lblThSoil: document.getElementById("lblThSoil"),
+      lblThTemp: document.getElementById("lblThTemp"),
+      lblThLight: document.getElementById("lblThLight"),
+      lastSync: document.getElementById("lastSync"),
+      geminiKeyInput: document.getElementById("geminiKeyInput"),
+      btnSaveKey: document.getElementById("btnSaveKey"),
+      aiQuestion: document.getElementById("aiQuestion"),
+      btnAskAi: document.getElementById("btnAskAi"),
+      aiResponse: document.getElementById("aiResponse")
+    };
+
+    let state = {
+      tanaman: "monstera",
+      tanah: 0,
+      suhu: 0,
+      kelembapan: 0,
+      cahaya: 0,
+      pompa: 0,
+      kipas: 0,
+      lampu: 0,
+      system_running: 0,
+      control_mode: "ai",
+      th_soil: 45,
+      th_temp: 30,
+      th_light: 40
+    };
+
+    let isDraggingSlider = false;
+
+    function initPlantSelect() {
+      el.plantSelect.innerHTML = "";
+      for (const [key, p] of Object.entries(PLANTS)) {
+        const opt = document.createElement("option");
+        opt.value = key;
+        opt.textContent = `${p.emoji} ${p.name}`;
+        el.plantSelect.appendChild(opt);
+      }
+    }
+
+    function setCloudStatus(status, text) {
+      el.cloudDot.className = "status-dot " + status;
+      el.cloudText.textContent = text;
+    }
+
+    function evalBadge(val, min, max, lowText, highText) {
+      if (val === null || val === undefined || isNaN(val)) {
+        return { text: "--", cls: "badge-off" };
+      }
+      if (val < min) return { text: lowText, cls: "badge-warn" };
+      if (val > max) return { text: highText, cls: "badge-danger" };
+      return { text: "Ideal", cls: "badge-ok" };
+    }
+
+    function setBadge(target, info) {
+      target.textContent = info.text;
+      target.className = "badge " + info.cls;
+    }
+
+    function setRelayUI(box, stateEl, isOn) {
+      if (Number(isOn) === 1) {
+        box.classList.add("active");
+        stateEl.textContent = "ON";
+        stateEl.style.color = "#34d399";
+      } else {
+        box.classList.remove("active");
+        stateEl.textContent = "OFF";
+        stateEl.style.color = "var(--muted)";
+      }
+    }
+
+    function render() {
+      const plant = PLANTS[state.tanaman] || PLANTS.monstera;
+      el.plantEmoji.textContent = plant.emoji;
+      el.plantSelect.value = PLANTS[state.tanaman] ? state.tanaman : "monstera";
+
+      el.valSoil.textContent = `${state.tanah ?? "--"}%`;
+      el.valTemp.textContent = `${state.suhu ?? "--"}°C`;
+      el.valHum.textContent = `${state.kelembapan ?? "--"}%`;
+      el.valLight.textContent = `${state.cahaya ?? "--"}%`;
+
+      el.idealSoil.textContent = `Ideal: ${plant.sMin}% - ${plant.sMax}%`;
+      el.idealTemp.textContent = `Ideal: ${plant.tMin}°C - ${plant.tMax}°C`;
+      el.idealHum.textContent = `Ideal: ${plant.hMin}% - ${plant.hMax}%`;
+      el.idealLight.textContent = `Ideal: ${plant.lMin}% - ${plant.lMax}%`;
+
+      setBadge(el.badgeSoil, evalBadge(Number(state.tanah), plant.sMin, plant.sMax, "Kurang Air", "Terlalu Basah"));
+      setBadge(el.badgeTemp, evalBadge(Number(state.suhu), plant.tMin, plant.tMax, "Terlalu Dingin", "Terlalu Panas"));
+      setBadge(el.badgeHum, evalBadge(Number(state.kelembapan), plant.hMin, plant.hMax, "Udara Kering", "Terlalu Lembap"));
+      setBadge(el.badgeLight, evalBadge(Number(state.cahaya), plant.lMin, plant.lMax, "Kurang Cahaya", "Cahaya Berlebih"));
+
+      setRelayUI(el.boxPompa, el.statePompa, state.pompa);
+      setRelayUI(el.boxKipas, el.stateKipas, state.kipas);
+      setRelayUI(el.boxLampu, el.stateLampu, state.lampu);
+
+      const running = Number(state.system_running) === 1;
+      el.badgeRunning.textContent = running ? "BERJALAN" : "BERHENTI";
+      el.badgeRunning.className = "badge " + (running ? "badge-ok" : "badge-danger");
+
+      const isSlider = state.control_mode === "slider";
+      el.btnMode.textContent = isSlider ? "Mode: SLIDER (Manual)" : "Mode: AI (Otomatis)";
+      el.slidersBox.classList.toggle("hidden", !isSlider);
+      el.aiModeNote.style.display = isSlider ? "none" : "block";
+
+      if (!isDraggingSlider) {
+        el.sliderSoil.value = state.th_soil ?? plant.sMin;
+        el.sliderTemp.value = state.th_temp ?? plant.tMax;
+        el.sliderLight.value = state.th_light ?? plant.lMin;
+        el.lblThSoil.textContent = `${el.sliderSoil.value}%`;
+        el.lblThTemp.textContent = `${el.sliderTemp.value}°C`;
+        el.lblThLight.textContent = `${el.sliderLight.value}%`;
+      }
+    }
+
+    async function fetchCloud() {
+      try {
+        const res = await fetch(SUPABASE_URL, {
+          method: "GET",
+          headers: {
+            "apikey": SUPABASE_ANON_KEY,
+            "Authorization": `Bearer ${SUPABASE_ANON_KEY}`
+          }
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const rows = await res.json();
+        if (Array.isArray(rows) && rows.length > 0) {
+          state = { ...state, ...rows[0] };
+          render();
+          setCloudStatus("online", "Cloud Terhubung (Supabase)");
+          el.lastSync.textContent = "Sinkronisasi terakhir: " + new Date().toLocaleTimeString("id-ID");
+        } else {
+          setCloudStatus("offline", "Data id=1 tidak ditemukan");
+        }
+      } catch (err) {
+        setCloudStatus("offline", "Gagal terhubung ke Cloud");
+      }
+    }
+
+    async function patchCloud(payload) {
+      Object.assign(state, payload);
+      render();
+      setCloudStatus("", "Menyimpan perubahan...");
+      try {
+        const res = await fetch(SUPABASE_URL, {
+          method: "PATCH",
+          headers: {
+            "apikey": SUPABASE_ANON_KEY,
+            "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
+            "Content-Type": "application/json",
+            "Prefer": "return=minimal"
+          },
+          body: JSON.stringify(payload)
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        setCloudStatus("online", "Cloud Terhubung (Supabase)");
+        el.lastSync.textContent = "Tersimpan: " + new Date().toLocaleTimeString("id-ID");
+      } catch (err) {
+        setCloudStatus("offline", "Gagal mengirim ke Cloud");
+      }
+    }
+
+    // Event listeners
+    el.plantSelect.addEventListener("change", (e) => {
+      const key = e.target.value;
+      const plant = PLANTS[key];
+      patchCloud({
+        tanaman: key,
+        th_soil: plant.sMin,
+        th_temp: plant.tMax,
+        th_light: plant.lMin
+      });
+    });
+
+    el.btnStart.addEventListener("click", () => patchCloud({ system_running: 1 }));
+    el.btnStop.addEventListener("click", () => patchCloud({ system_running: 0 }));
+
+    el.btnMode.addEventListener("click", () => {
+      const nextMode = state.control_mode === "ai" ? "slider" : "ai";
+      patchCloud({ control_mode: nextMode });
+    });
+
+    function bindSlider(slider, labelEl, unit, field) {
+      slider.addEventListener("input", () => {
+        isDraggingSlider = true;
+        labelEl.textContent = `${slider.value}${unit}`;
+      });
+      slider.addEventListener("change", () => {
+        isDraggingSlider = false;
+        patchCloud({ [field]: Number(slider.value) });
+      });
+    }
+
+    bindSlider(el.sliderSoil, el.lblThSoil, "%", "th_soil");
+    bindSlider(el.sliderTemp, el.lblThTemp, "°C", "th_temp");
+    bindSlider(el.sliderLight, el.lblThLight, "%", "th_light");
+
+    // Gemini AI Assistant
+    const savedKey = localStorage.getItem("gh_gemini_key") || "";
+    el.geminiKeyInput.value = savedKey;
+
+    el.btnSaveKey.addEventListener("click", () => {
+      const key = el.geminiKeyInput.value.trim();
+      localStorage.setItem("gh_gemini_key", key);
+      el.btnSaveKey.textContent = "Tersimpan ✓";
+      setTimeout(() => { el.btnSaveKey.textContent = "Simpan"; }, 1500);
+    });
+
+    async function askGemini() {
+      const apiKey = (el.geminiKeyInput.value || localStorage.getItem("gh_gemini_key") || "").trim();
+      const question = el.aiQuestion.value.trim();
+      if (!apiKey) {
+        el.aiResponse.textContent = "Harap masukkan Gemini API Key terlebih dahulu lalu klik Simpan.";
+        return;
+      }
+      if (!question) {
+        el.aiResponse.textContent = "Silakan tulis pertanyaan terlebih dahulu.";
+        return;
+      }
+
+      const plant = PLANTS[state.tanaman] || PLANTS.monstera;
+      const prompt = `Kamu adalah asisten ahli perawatan tanaman greenhouse. Jawab pertanyaan pengguna secara singkat, padat, praktis dalam Bahasa Indonesia tanpa format markdown (jangan gunakan tanda bintang, pagar, atau backtick).
+Konteks saat ini:
+- Tanaman aktif: ${plant.name} (Ideal suhu ${plant.tMin}-${plant.tMax} C, kelembapan udara ${plant.hMin}-${plant.hMax}%, tanah ${plant.sMin}-${plant.sMax}%, cahaya ${plant.lMin}-${plant.lMax}%)
+- Data sensor: Tanah ${state.tanah}%, Suhu ${state.suhu} C, Kelembapan Udara ${state.kelembapan}%, Cahaya ${state.cahaya}%
+- Status sistem: ${Number(state.system_running) === 1 ? "BERJALAN" : "BERHENTI"}, Mode ${state.control_mode}
+- Relay: Pompa ${Number(state.pompa) === 1 ? "ON" : "OFF"}, Kipas ${Number(state.kipas) === 1 ? "ON" : "OFF"}, Lampu ${Number(state.lampu) === 1 ? "ON" : "OFF"}
+Pertanyaan: ${question}`;
+
+      el.btnAskAi.disabled = true;
+      el.aiResponse.textContent = "Sedang menganalisis kondisi tanaman...";
+
+      try {
+        const res = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(apiKey)}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: prompt }] }]
+            })
+          }
+        );
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.error?.message || `HTTP ${res.status}`);
+        }
+        const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || "Tidak ada respons dari AI.";
+        el.aiResponse.textContent = rawText.replace(/[*#`]/g, "").trim();
+      } catch (err) {
+        el.aiResponse.textContent = `Gagal menghubungi Gemini AI: ${err.message}`;
+      } finally {
+        el.btnAskAi.disabled = false;
+      }
+    }
+
+    el.btnAskAi.addEventListener("click", askGemini);
+    el.aiQuestion.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") askGemini();
+    });
+
+    // Init
+    initPlantSelect();
+    render();
+    fetchCloud();
+    setInterval(fetchCloud, 4000);
+  </script>
+</body>
+</html>
